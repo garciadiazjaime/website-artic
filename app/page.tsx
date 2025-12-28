@@ -51,7 +51,7 @@ const IMAGE_WIDTH = 843;
 const IMAGE_HEIGHT = 809;
 
 export default function Home() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(5);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
