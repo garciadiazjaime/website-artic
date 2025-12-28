@@ -1,8 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { quizData } from "./question";
+import { useState, useEffect } from "react";
+
+interface Question {
+  difficulty: string;
+  question_number: number;
+  question_text: string;
+  options: {
+    [key: string]: string;
+  };
+  correct_answer: string;
+}
+
+interface QuizData {
+  quiz_title: string;
+  questions: Question[];
+}
 
 const colors = {
   // Main colors
@@ -33,21 +47,29 @@ const colors = {
 };
 
 export default function Home() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(5);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showFinalResults, setShowFinalResults] = useState(false);
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
 
-  const currentQuestion = quizData.questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === quizData.questions.length - 1;
+  useEffect(() => {
+    fetch('/api/quiz')
+      .then(res => res.json())
+      .then(data => setQuizData(data))
+      .catch(err => console.error('Failed to load questions:', err));
+  }, []);
+
+  const currentQuestion = quizData?.questions[currentQuestionIndex];
+  const isLastQuestion = quizData ? currentQuestionIndex === quizData.questions.length - 1 : false;
 
   const handleAnswerSelect = (option: string) => {
     if (!showResult) setSelectedAnswer(option);
   };
 
   const handleRevealAnswer = () => {
-    if (selectedAnswer) {
+    if (selectedAnswer && currentQuestion) {
       setShowResult(true);
       if (selectedAnswer === currentQuestion.correct_answer) {
         setCorrectAnswers(correctAnswers + 1);
@@ -62,6 +84,8 @@ export default function Home() {
   };
 
   const getOptionStyle = (key: string) => {
+    if (!currentQuestion) return {};
+    
     const isSelected = selectedAnswer === key;
     const isCorrect = key === currentQuestion.correct_answer;
     
@@ -110,18 +134,23 @@ export default function Home() {
   });
 
   return (
-    <main style={{ minHeight: '100vh', backgroundColor: colors.bg.page }}>
+    <main style={{ minHeight: '100vh', backgroundColor: colors.bg.page, position: 'relative' }}>
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>        
         <Image 
-          src="https://www.artic.edu/iiif/2/3c27b499-af56-f0d5-93b5-a7f2f1ad5813/full/1686,/0/default.jpg" 
+          src="https://www.artic.edu/iiif/2/3c27b499-af56-f0d5-93b5-a7f2f1ad5813/full/843,/0/default.jpg" 
           alt="Art Image" 
-          width={1686} 
-          height={1619} 
+          width={843} 
+          height={809}
           unoptimized 
+          loading="eager"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
 
-        {showFinalResults ? (
+        {!quizData ? (
+          <div style={{ backgroundColor: colors.bg.card, padding: '2rem', textAlign: 'center' }}>
+            <p style={{ color: colors.text.secondary, fontSize: '1.125rem' }}>Loading quiz...</p>
+          </div>
+        ) : showFinalResults ? (
           <div style={{ backgroundColor: colors.bg.card, padding: '2rem', textAlign: 'center' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: colors.dark }}>
               Quiz Complete!
@@ -155,10 +184,10 @@ export default function Home() {
               </p>
             </div>
           </div>
-        ) : (
+        ) : currentQuestion ? (
           <div style={{ backgroundColor: colors.bg.card, padding: '1rem' }}>
             <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', lineHeight: '1.5' }}>
-              {currentQuestionIndex + 1}. {currentQuestion.question_text}
+              {currentQuestion.question_text}
             </h2>
 
             <div style={{ marginBottom: '1rem' }}>
@@ -189,8 +218,27 @@ export default function Home() {
               )}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
+
+      {quizData && !showFinalResults && (
+        <div style={{ 
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          height: '4px',
+          backgroundColor: colors.border,
+          zIndex: 50
+        }}>
+          <div style={{ 
+            width: `${((currentQuestionIndex + 1) / quizData.questions.length) * 100}%`, 
+            height: '100%',
+            backgroundColor: colors.primary,
+            transition: 'width 0.3s ease'
+          }} />
+        </div>
+      )}
     </main>
   );
 }
