@@ -15,6 +15,7 @@ interface Question {
 
 interface QuizData {
   quiz_title: string;
+  image: string;
   questions: Question[];
 }
 
@@ -45,6 +46,9 @@ const colors = {
   border: '#d1d5db',       // Default border
   white: 'white',
 };
+
+const IMAGE_WIDTH = 843;
+const IMAGE_HEIGHT = 809;
 
 export default function Home() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -136,19 +140,60 @@ export default function Home() {
   return (
     <main style={{ minHeight: '100vh', backgroundColor: colors.bg.page, position: 'relative' }}>
       <div style={{ maxWidth: '100%', margin: '0 auto' }}>        
-        <Image 
-          src="https://www.artic.edu/iiif/2/3c27b499-af56-f0d5-93b5-a7f2f1ad5813/full/843,/0/default.jpg" 
-          alt="Art Image" 
-          width={843} 
-          height={809}
-          unoptimized 
-          loading="eager"
-          style={{ width: '100%', height: 'auto', display: 'block' }}
-        />
+        {!quizData ? (
+          <div style={{ 
+            width: '100%', 
+            aspectRatio: `${IMAGE_WIDTH}/${IMAGE_HEIGHT}`,
+            backgroundColor: colors.border,
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            display: 'block'
+          }} />
+        ) : (
+          <Image 
+            src={quizData.image} 
+            alt="Art Image"
+            width={IMAGE_WIDTH} 
+            height={IMAGE_HEIGHT}
+            unoptimized 
+            loading="eager"
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
+        )}
 
         {!quizData ? (
-          <div style={{ backgroundColor: colors.bg.card, padding: '2rem', textAlign: 'center' }}>
-            <p style={{ color: colors.text.secondary, fontSize: '1.125rem' }}>Loading quiz...</p>
+          <div style={{ backgroundColor: colors.bg.card, padding: '1rem' }}>
+            {/* Question skeleton */}
+            <div style={{ 
+              height: '3rem', 
+              backgroundColor: colors.border, 
+              borderRadius: '0.5rem',
+              marginBottom: '1rem',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }} />
+            
+            {/* Options skeleton */}
+            <div style={{ marginBottom: '1rem' }}>
+              {[1, 2, 3, 4].map((i) => (
+                <div 
+                  key={i}
+                  style={{ 
+                    height: '2.75rem', 
+                    backgroundColor: colors.border, 
+                    borderRadius: '0.5rem',
+                    marginBottom: '0.5rem',
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                  }} 
+                />
+              ))}
+            </div>
+            
+            {/* Button skeleton */}
+            <div style={{ 
+              height: '3rem', 
+              backgroundColor: colors.border, 
+              borderRadius: '0.5rem',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }} />
           </div>
         ) : showFinalResults ? (
           <div style={{ backgroundColor: colors.bg.card, padding: '2rem', textAlign: 'center' }}>
@@ -217,6 +262,31 @@ export default function Home() {
                 </button>
               )}
             </div>
+
+            {currentQuestionIndex === 0 && (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginTop: '1rem',
+                paddingTop: '0.75rem',
+                borderTop: `1px solid ${colors.border}`
+              }}>
+                <span style={{ 
+                  fontSize: '0.75rem', 
+                  fontWeight: '600', 
+                  color: colors.text.secondary 
+                }}>
+                  Today&nbsp;s Quiz
+                </span>
+                <span style={{ 
+                  fontSize: '0.75rem', 
+                  color: colors.text.secondary 
+                }}>
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            )}
           </div>
         ) : null}
       </div>
