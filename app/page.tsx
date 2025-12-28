@@ -51,12 +51,22 @@ const IMAGE_WIDTH = 843;
 const IMAGE_HEIGHT = 809;
 
 export default function Home() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(5);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showFinalResults, setShowFinalResults] = useState(false);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
+  const [completedDays, setCompletedDays] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const history = localStorage.getItem('quizCompletionHistory');
+      if (history) {
+        const dates = JSON.parse(history) as number[];
+        return dates.length;
+      }
+    }
+    return 0;
+  });
 
   useEffect(() => {
     fetch('/api/quiz')
@@ -64,6 +74,7 @@ export default function Home() {
       .then(data => setQuizData(data))
       .catch(err => console.error('Failed to load questions:', err));
   }, []);
+
 
   const currentQuestion = quizData?.questions[currentQuestionIndex];
   const isLastQuestion = quizData ? currentQuestionIndex === quizData.questions.length - 1 : false;
@@ -85,6 +96,21 @@ export default function Home() {
     setCurrentQuestionIndex(currentQuestionIndex + 1);
     setSelectedAnswer(null);
     setShowResult(false);
+  };
+
+  const handleShowFinalResults = () => {
+    const date = new Date();
+    const today = (date.getFullYear() % 100) * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+    const history = localStorage.getItem('quizCompletionHistory');
+    const dates = history ? JSON.parse(history) as number[] : [];
+    
+    if (!dates.includes(today)) {
+      dates.push(today);
+      localStorage.setItem('quizCompletionHistory', JSON.stringify(dates));
+      setCompletedDays(dates.length);
+    }
+    
+    setShowFinalResults(true);
   };
 
   const getOptionStyle = (key: string) => {
@@ -196,34 +222,48 @@ export default function Home() {
             }} />
           </div>
         ) : showFinalResults ? (
-          <div style={{ backgroundColor: colors.bg.card, padding: '2rem', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: colors.dark }}>
-              Quiz Complete!
-            </h2>
-            
-            <div style={{ backgroundColor: colors.bg.primary, borderRadius: '1rem', padding: '2rem', marginBottom: '2rem' }}>
+          <div style={{ backgroundColor: colors.bg.card, padding: '1rem', textAlign: 'center' }}>
+            <div style={{ 
+              backgroundColor: colors.bg.primary, 
+              borderRadius: '1rem', 
+              padding: '1rem', 
+              marginBottom: '1rem',
+              border: `2px solid ${colors.primary}`
+            }}>
               <p style={{ fontSize: '3rem', fontWeight: '700', margin: 0, color: colors.primary }}>
                 {correctAnswers}/{quizData.questions.length}
               </p>
-              <p style={{ fontSize: '1.125rem', color: colors.text.secondary, marginTop: '0.5rem' }}>
+              <p style={{ fontSize: '1rem', color: colors.text.secondary, marginTop: '0.5rem', fontWeight: '500' }}>
                 Correct Answers
               </p>
             </div>
 
+            <div style={{ 
+              backgroundColor: colors.bg.page, 
+              borderRadius: '1rem', 
+              padding: '1rem', 
+              marginBottom: '1rem',
+              border: `2px solid ${colors.border}`
+            }}>
+              <p style={{ fontSize: '3rem', fontWeight: '700', margin: 0, color: colors.dark }}>
+                {completedDays}
+              </p>
+              <p style={{ fontSize: '1rem', color: colors.text.secondary, marginTop: '0.5rem', fontWeight: '500' }}>
+                {completedDays === 1 ? 'Day Completed' : 'Days Completed'}
+              </p>
+            </div>
+
             <div style={{
-              backgroundColor: colors.dark,
-              borderRadius: '0.75rem',
-              padding: '1.25rem',
-              marginBottom: '1.5rem',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+              backgroundColor: colors.bg.page,
+              borderRadius: '1rem',
+              padding: '1rem',
+              border: `2px solid ${colors.border}`
             }}>
               <p style={{
-                fontSize: '0.75rem',
-                color: colors.text.light,
+                fontSize: '1rem',
+                color: colors.text.secondary,
                 margin: 0,
-                fontWeight: '600',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em'
+                fontWeight: '500'
               }}>
                 Next Quiz Tomorrow
               </p>
@@ -255,7 +295,7 @@ export default function Home() {
                 </button>
               ) : (
                 <button 
-                  onClick={isLastQuestion ? () => setShowFinalResults(true) : handleNextQuestion}
+                  onClick={isLastQuestion ? handleShowFinalResults : handleNextQuestion}
                   style={getButtonStyle(isLastQuestion ? colors.primary : colors.success)}
                 >
                   {isLastQuestion ? 'See Results' : 'Next Question'}
