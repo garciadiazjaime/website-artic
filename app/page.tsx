@@ -64,18 +64,18 @@ const getButtonStyle = (bgColor: string, disabled = false) => ({
 });
 
 export default function Home() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(6);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showFinalResults, setShowFinalResults] = useState(false);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [completedDays, setCompletedDays] = useState(() => {
+  const [streak, setStreak] = useState(() => {
     if (typeof window !== "undefined") {
-      const history = localStorage.getItem("quizCompletionHistory");
-      if (history) {
-        const dates = JSON.parse(history) as number[];
-        return dates.length;
+      const data = localStorage.getItem("quizStreak");
+      if (data) {
+        const parsed = JSON.parse(data) as { streak: number; lastDate: number };
+        return parsed.streak;
       }
     }
     return 0;
@@ -118,15 +118,40 @@ export default function Home() {
       (date.getFullYear() % 100) * 10000 +
       (date.getMonth() + 1) * 100 +
       date.getDate();
-    const history = localStorage.getItem("quizCompletionHistory");
-    const dates = history ? (JSON.parse(history) as number[]) : [];
 
-    if (!dates.includes(today)) {
-      dates.push(today);
-      localStorage.setItem("quizCompletionHistory", JSON.stringify(dates));
-      setCompletedDays(dates.length);
+    const data = localStorage.getItem("quizStreak");
+    let newStreak = 1;
+
+    if (data) {
+      const parsed = JSON.parse(data) as { streak: number; lastDate: number };
+
+      if (parsed.lastDate === today) {
+        // Already completed today
+        newStreak = parsed.streak;
+      } else {
+        // Check if lastDate was yesterday
+        const yesterday = new Date(date);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayNum =
+          (yesterday.getFullYear() % 100) * 10000 +
+          (yesterday.getMonth() + 1) * 100 +
+          yesterday.getDate();
+
+        if (parsed.lastDate === yesterdayNum) {
+          // Continue streak
+          newStreak = parsed.streak + 1;
+        } else {
+          // Streak broken, reset to 1
+          newStreak = 1;
+        }
+      }
     }
 
+    localStorage.setItem(
+      "quizStreak",
+      JSON.stringify({ streak: newStreak, lastDate: today })
+    );
+    setStreak(newStreak);
     setShowFinalResults(true);
   };
 
@@ -293,7 +318,7 @@ export default function Home() {
                   color: colors.dark,
                 }}
               >
-                {completedDays}
+                {streak}
               </p>
               <p
                 style={{
@@ -303,7 +328,7 @@ export default function Home() {
                   fontWeight: "500",
                 }}
               >
-                {completedDays === 1 ? "Day Completed" : "Days Completed"}
+                {streak === 1 ? "Day Streak" : "Day Streak"}
               </p>
             </div>
 
