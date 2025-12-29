@@ -219,7 +219,12 @@ export default function Home() {
             height={IMAGE_HEIGHT}
             unoptimized
             loading="eager"
-            style={{ width: "100%", height: "auto", display: "block" }}
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              maxHeight: "50vh",
+            }}
           />
         )}
 

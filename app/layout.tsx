@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Art Quiz | Seven Questions a Day from the Art Institute of Chicago",
-  description: "Built this simple quiz app to test your knowledge about famous artworks from the Art Institute of Chicago.",
+  title: "Seven Questions a Day from the Art Institute of Chicago",
+  description:
+    "Built this simple quiz app to test your knowledge about famous artworks from the Art Institute of Chicago.",
 };
 
 export default function RootLayout({
