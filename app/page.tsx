@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface Question {
@@ -64,7 +64,7 @@ const getButtonStyle = (bgColor: string, disabled = false) => ({
   width: "100%",
 });
 
-export default function Home() {
+function QuizContent() {
   const searchParams = useSearchParams();
   const date = searchParams.get("date");
 
@@ -479,5 +479,17 @@ export default function Home() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ minHeight: "100vh", backgroundColor: colors.bg.page }} />
+      }
+    >
+      <QuizContent />
+    </Suspense>
   );
 }
