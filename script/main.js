@@ -3,8 +3,8 @@ import { GoogleGenAI } from "@google/genai";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import "dotenv/config";
 
-import calendar2026 from "./data/calendar.js";
 import artQuizExample from "./data/quiz_example.js";
+import artists from "./data/artists.js";
 
 const BASE_FOLDER = "script/art-quiz";
 const ai = new GoogleGenAI({});
@@ -12,6 +12,8 @@ const s3Client = new S3Client({
   region: "us-east-1",
 });
 const BUCKET_NAME = process.env.S3_BUCKET_NAME;
+// gemini-2.5-flash
+const MODEL_NAME = "gemma-3-12b-it";
 
 async function waitFor(ms = 1000) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -43,24 +45,88 @@ function loggerInfo(...args) {
   }
 }
 
-async function searchArtic(item) {
+async function uploadFile(Key, payload) {
+  loggerInfo("Uploading file to S3:", Key);
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key,
+    Body: JSON.stringify(payload),
+    ContentType: "application/json",
+    CacheControl: "public, max-age=31536000", // Cache for 1 year
+  });
+
+  await s3Client.send(command);
+  loggerInfo(`Uploaded: ${Key}`);
+}
+
+async function saveArtwork(dateString, artwork) {
+  loggerInfo("Saving artwork:", dateString);
+  fs.mkdirSync(BASE_FOLDER, { recursive: true });
+
+  const filePath = `${BASE_FOLDER}/${dateString}.artwork.json`;
+  fs.writeFileSync(filePath, JSON.stringify(artwork, null, 2));
+  loggerInfo("Saved artwork to:", filePath);
+}
+
+async function saveQuiz(dateString, quiz) {
+  loggerInfo("Saving quiz:", dateString);
+
+  fs.mkdirSync(BASE_FOLDER, { recursive: true });
+  const filePath = `${BASE_FOLDER}/${dateString}.quiz.json`;
+  const payload = JSON.stringify(quiz, null, 2);
+  fs.writeFileSync(filePath, payload);
+  loggerInfo("Saved quiz to:", filePath);
+
+  return payload;
+}
+
+async function generateQuizQuestions(artwork) {
+  const exampleQuestions = artQuizExample.questions;
+
+  const prompt = `Generate 7 quiz questions about the following artwork: ${
+    artwork.data.artist_title
+  } - ${
+    artwork.data.title
+  }; use the following example questions as a guide: ${JSON.stringify(
+    exampleQuestions
+  )}; The questions should be a mix of easy, intermediate, hard, and expert difficulty levels; each question should have 3 options labeled A, B, and C; provide the correct answer for each question; return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; only return the JSON array without any additional text.`;
+
+  loggerInfo("Generating quiz questions");
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+  });
+  const cleanJson = response.text.replace(/^```json|```$/g, "").trim();
+  const questions = JSON.parse(cleanJson);
+
+  return questions;
+}
+
+async function getArtworks(artist) {
+  loggerInfo(`Fetching works by artist: ${artist}`);
   const query = {
     query: {
       bool: {
         must: [
-          { match: { title: { query: item.iconic_work, fuzziness: "AUTO" } } },
+          { term: { is_public_domain: true } },
+          { term: { "artist_title.keyword": artist } },
           {
-            match: { artist_title: { query: item.artist, fuzziness: "AUTO" } },
+            match: {
+              medium_display: { query: "Oil on canvas", fuzziness: "AUTO" },
+            },
           },
+          { exists: { field: "artist_title" } },
         ],
       },
     },
+    sort: [{ boost_rank: { order: "desc" } }],
   };
-  loggerInfo("query", query);
+  loggerInfo(query);
   const url = `https://api.artic.edu/api/v1/artworks/search?params=${encodeURIComponent(
     JSON.stringify(query)
   )}&limit=1`;
-  loggerInfo("Searching:", url);
+  loggerInfo(url);
+
   const response = await fetch(url);
   const data = await response.json();
 
@@ -76,135 +142,93 @@ async function fetchArtwork(item) {
   return data;
 }
 
-async function saveArtwork(entry, artwork) {
-  loggerInfo("Saving artwork:", entry.day);
-  fs.mkdirSync(BASE_FOLDER, { recursive: true });
+async function getArtwork(artist) {
+  const item = await getArtworks(artist);
+  if (item.data.length === 0) {
+    return null;
+  }
 
-  const filePath = `${BASE_FOLDER}/${entry.day}.artwork.json`;
-  fs.writeFileSync(filePath, JSON.stringify(artwork, null, 2));
-  loggerInfo("Saved artwork to:", filePath);
+  const artwork = await fetchArtwork(item.data[0]);
+  return artwork;
 }
 
-async function uploadFile(Key, Body) {
-  loggerInfo("Uploading file to S3:", Key);
-  const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key,
-    Body,
-    ContentType: "application/json",
-    CacheControl: "public, max-age=31536000", // Cache for 1 year
-  });
-
-  await s3Client.send(command);
-  loggerInfo(`Uploaded: ${Key}`);
-}
-
-async function saveQuiz(entry, artwork, questions) {
-  loggerInfo("Saving quiz:", entry.day);
-  const quiz = {
-    image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/843,/0/default.jpg`,
-    alternate_image: "",
-    quiz_title: `${entry.artist}: ${entry.iconic_work} - Art Institute of Chicago`,
-    questions,
-  };
-
-  const filePath = `${BASE_FOLDER}/${entry.day}.quiz.json`;
-  const payload = JSON.stringify(quiz, null, 2);
-  fs.writeFileSync(filePath, payload);
-  loggerInfo("Saved quiz to:", filePath);
-
-  return payload;
-}
-
-async function generateQuizQuestions(entry) {
-  const exampleQuestions = artQuizExample.questions;
-
-  const prompt = `Generate 7 quiz questions about the following artwork: ${
-    entry.artist
-  } - ${
-    entry.iconic_work
-  }; use the following example questions as a guide: ${JSON.stringify(
-    exampleQuestions
-  )}; The questions should be a mix of easy, intermediate, hard, and expert difficulty levels; each question should have 3 options labeled A, B, and C; provide the correct answer for each question; return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; only return the JSON array without any additional text.`;
-
-  loggerInfo("Generating quiz questions", entry);
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-  });
-
-  const cleanJson = response.text.replace(/^```json|```$/g, "").trim();
-  const questions = JSON.parse(cleanJson);
-
-  return questions;
-}
-
-function quizExists(entry) {
-  const filePath = `${BASE_FOLDER}/${entry.day}.quiz.json`;
+function quizExists(dateString) {
+  const filePath = `${BASE_FOLDER}/${dateString}.quiz.json`;
   return fs.existsSync(filePath);
 }
 
 const report = {
   notFoundInArtic: [],
-  notPublicDomain: [],
   noArtwork: [],
   noImage: [],
+  missingData: [],
   noQuestions: [],
   insufficientQuestions: [],
 };
 async function main() {
-  for (let entry of calendar2026.daily_art_calendar.slice(0, 2)) {
-    loggerInfo(entry.day, "-", entry.artist, "-", entry.iconic_work);
+  let index = 0;
+  let artistIndex = 0;
+  const firstDay = new Date(2026, 0, 1);
 
-    if (quizExists(entry)) {
-      loggerInfo("[skip] Quiz already exists for", entry.day);
+  while (index < 31) {
+    loggerInfo(`....Processing ${index}`);
+    let day = new Date(firstDay);
+    day.setDate(firstDay.getDate() + index);
+    const dateString = day.toISOString().split("T")[0];
+
+    if (quizExists(dateString)) {
+      loggerInfo(`Quiz already exists for ${dateString}, skipping...`);
+      index += 1;
       continue;
     }
 
-    const response = await searchArtic(entry);
-
-    if (!response.data?.length) {
-      loggerInfo("[error] No results for", entry);
-      report.notFoundInArtic.push(entry);
-      continue;
-    }
-
-    const artwork = await fetchArtwork(response.data[0]);
+    const artwork = await getArtwork(artists[artistIndex]);
+    artistIndex += 1;
     if (!artwork) {
-      loggerInfo("[error] No artwork found for", entry);
-      report.noArtwork.push(entry);
+      loggerInfo(`[error] No results for ${artists[artistIndex - 1]}`);
       continue;
     }
-    if (!artwork.data.is_public_domain) {
-      loggerInfo("[warn] Not public domain:", entry);
-      report.notPublicDomain.push(entry);
-    }
-    if (!artwork.data.image_id) {
-      loggerInfo("[error] No image for", entry);
-      report.noImage.push(entry);
-    }
-    await saveArtwork(entry, artwork);
 
-    const questions = await generateQuizQuestions(entry);
+    if (!artwork.data.image_id) {
+      loggerInfo("[error] No image for", artwork.data.api_link);
+      report.noImage.push(artwork.data.api_link);
+      continue;
+    }
+
+    if (!artwork.data.title || !artwork.data.artist_title) {
+      loggerInfo("[error] Incomplete artwork data for", artwork.data.api_link);
+      report.missingData.push(artwork.data.api_link);
+      continue;
+    }
+
+    const questions = await generateQuizQuestions(artwork);
     if (questions?.length === 0) {
-      loggerInfo("[error] No questions generated for", entry);
-      report.noQuestions.push(entry);
+      loggerInfo("[error] No questions generated for", artwork.data.api_link);
+      report.noQuestions.push(artwork.data.api_link);
       continue;
     }
 
     if (questions.length < 7) {
       loggerInfo(
         "[error] Not enough questions generated for",
-        entry,
+        artwork.data.api_link,
         questions.length
       );
-      report.insufficientQuestions.push(entry);
+      report.insufficientQuestions.push(artwork.data.api_link);
       continue;
     }
 
-    const quiz = await saveQuiz(entry, artwork, questions);
+    const quiz = {
+      image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/843,/0/default.jpg`,
+      quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
+      questions,
+    };
+    await saveArtwork(dateString, artwork);
+    await saveQuiz(dateString, quiz);
 
-    await uploadFile(`public/art-quiz/${entry.day}.json`, quiz);
+    await uploadFile(`public/art-quiz/${dateString}.json`, quiz);
+
+    index += 1;
 
     await waitFor();
   }
@@ -212,33 +236,13 @@ async function main() {
   loggerInfo("\n" + "=".repeat(50));
   loggerInfo("REPORT SUMMARY");
   loggerInfo("=".repeat(50));
-  loggerInfo(`Total processed: ${calendar2026.daily_art_calendar.length}`);
-  loggerInfo(
-    `✅ Successful: ${
-      calendar2026.daily_art_calendar.length -
-      (report.notFoundInArtic.length +
-        report.notPublicDomain.length +
-        report.noArtwork.length +
-        report.noImage.length +
-        report.noQuestions.length +
-        report.insufficientQuestions.length)
-    }`
-  );
+  loggerInfo(`✅ Successful: ${index}`);
 
   if (report.notFoundInArtic.length) {
     loggerInfo(
       `\n${colors.red}❌ Not found in ARTIC (${report.notFoundInArtic.length}):${colors.reset}`
     );
     report.notFoundInArtic.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-
-  if (report.notPublicDomain.length) {
-    loggerInfo(
-      `\n${colors.yellow}⚠️  Not public domain (${report.notPublicDomain.length}):${colors.reset}`
-    );
-    report.notPublicDomain.forEach((e) =>
       loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
     );
   }
@@ -257,6 +261,14 @@ async function main() {
       `\n${colors.red}❌ No image (${report.noImage.length}):${colors.reset}`
     );
     report.noImage.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+  if (report.missingData.length) {
+    loggerInfo(
+      `\n${colors.red}❌ Missing data (${report.missingData.length}):${colors.reset}`
+    );
+    report.missingData.forEach((e) =>
       loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
     );
   }
