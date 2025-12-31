@@ -12,8 +12,8 @@ const s3Client = new S3Client({
   region: "us-east-1",
 });
 const BUCKET_NAME = process.env.S3_BUCKET_NAME;
-// gemini-2.5-flash
-const MODEL_NAME = "gemma-3-12b-it";
+// gemma-3-12b-it
+const MODEL_NAME = "gemini-2.5-flash";
 
 async function waitFor(ms = 1000) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -89,7 +89,13 @@ async function generateQuizQuestions(artwork) {
     artwork.data.title
   }; use the following example questions as a guide: ${JSON.stringify(
     exampleQuestions
-  )}; The questions should be a mix of easy, intermediate, hard, and expert difficulty levels; each question should have 3 options labeled A, B, and C; provide the correct answer for each question; return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; only return the JSON array without any additional text.`;
+  )}; The questions should be a mix of easy, intermediate, hard, and expert difficulty levels; 
+  each question should have 3 options labeled A, B, and C; 
+  provide the correct answer for each question; 
+  return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; 
+  only return the JSON array without any additional text.;
+  The questions should be only about the artwork
+  `;
 
   loggerInfo("Generating quiz questions");
   const response = await ai.models.generateContent({
@@ -170,7 +176,7 @@ async function main() {
   let artistIndex = 0;
   const firstDay = new Date(2026, 0, 1);
 
-  while (index < 31) {
+  while (index < 10) {
     loggerInfo(`....Processing ${index}`);
     let day = new Date(firstDay);
     day.setDate(firstDay.getDate() + index);
@@ -222,6 +228,7 @@ async function main() {
       image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/843,/0/default.jpg`,
       quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
       questions,
+      mode: MODEL_NAME,
     };
     await saveArtwork(dateString, artwork);
     await saveQuiz(dateString, quiz);
