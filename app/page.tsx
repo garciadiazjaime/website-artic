@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface Question {
   difficulty: string;
@@ -64,6 +65,9 @@ const getButtonStyle = (bgColor: string, disabled = false) => ({
 });
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const date = searchParams.get("date");
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -82,7 +86,7 @@ export default function Home() {
   });
 
   useEffect(() => {
-    fetch("/api/quiz")
+    fetch(`/api/quiz?date=${date || ""}`)
       .then((res) => res.json())
       .then((data) => setQuizData(data))
       .catch((err) => console.error("Failed to load questions:", err));
