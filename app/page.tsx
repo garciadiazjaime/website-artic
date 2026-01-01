@@ -20,6 +20,7 @@ interface QuizData {
   quiz_title: string;
   image: string;
   questions: Question[];
+  provenance: string[];
 }
 
 const IMAGE_WIDTH = 843;
@@ -335,6 +336,62 @@ function QuizContent() {
               >
                 Next Quiz Tomorrow
               </p>
+            </div>
+
+            <div
+              style={{
+                marginTop: "1.5rem",
+                paddingTop: "1.5rem",
+                borderTop: `2px solid ${colors.border}`,
+                textAlign: "left",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: "600",
+                  color: colors.text.primary,
+                  marginTop: 0,
+                  marginBottom: "1rem",
+                }}
+              >
+                Artwork Details
+              </h3>
+              <div
+                style={{
+                  backgroundColor: colors.bg.page,
+                  borderRadius: "0.5rem",
+                  padding: "1rem",
+                }}
+              >
+                {quizData?.provenance.map((line, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      fontSize: "1rem",
+                      lineHeight: "1.6",
+                      color: colors.text.secondary,
+                      marginBottom:
+                        index < quizData.provenance.length - 1 ? "0.75rem" : 0,
+                    }}
+                  >
+                    <span style={{ marginRight: "0.5rem", flexShrink: 0 }}>
+                      •
+                    </span>
+                    <span
+                      style={{
+                        fontWeight:
+                          quizData.provenance.length - 1 === index
+                            ? "bold"
+                            : "normal",
+                      }}
+                    >
+                      {line}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : currentQuestion ? (
