@@ -222,6 +222,7 @@ const report = {
   missingData: [],
   noQuestions: [],
   insufficientQuestions: [],
+  noProvenance: [],
 };
 function printReport(report, index) {
   loggerInfo("\n" + "=".repeat(50));
@@ -345,7 +346,12 @@ async function main() {
       continue;
     }
 
-    const provenance = await generateProvenance(artwork);
+    let provenance = await generateProvenance(artwork);
+    if (!Array.isArray(provenance) || !provenance.length) {
+      loggerInfo("[error] No provenance generated for", artwork.data.api_link);
+      report.noProvenance.push(artwork.data.api_link);
+      provenance = [];
+    }
 
     const quiz = {
       image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/843,/0/default.jpg`,

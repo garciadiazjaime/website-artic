@@ -364,7 +364,7 @@ function QuizContent() {
                   padding: "1rem",
                 }}
               >
-                {quizData?.provenance.map((line, index) => (
+                {quizData?.provenance?.map((line, index) => (
                   <div
                     key={index}
                     style={{
