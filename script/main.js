@@ -167,6 +167,31 @@ function quizExists(dateString) {
   return fs.existsSync(filePath);
 }
 
+const getArtistIndex = () => {
+  const files = fs
+    .readdirSync(BASE_FOLDER)
+    .filter((file) => file.endsWith(".artwork.json"))
+    .sort();
+
+  if (files.length === 0) {
+    loggerInfo("No artwork files found, starting from index 0");
+    return 0;
+  }
+
+  const lastFile = files[files.length - 1];
+  const content = fs.readFileSync(`${BASE_FOLDER}/${lastFile}`, "utf-8");
+  const artwork = JSON.parse(content);
+
+  const artist = artwork.data.artist_title;
+  const index = artists.indexOf(artist);
+  loggerInfo(
+    `Last file: ${lastFile}; Artist: ${artist}; Starting from index: ${
+      index + 1
+    }`
+  );
+  return index + 1;
+};
+
 const report = {
   notFoundInArtic: [],
   noArtwork: [],
@@ -175,11 +200,80 @@ const report = {
   noQuestions: [],
   insufficientQuestions: [],
 };
-async function main() {
-  let index = 0;
-  let artistIndex = 0;
-  const firstDay = new Date(2026, 0, 1);
+function printReport(report, index) {
+  loggerInfo("\n" + "=".repeat(50));
+  loggerInfo("REPORT SUMMARY");
+  loggerInfo("=".repeat(50));
+  loggerInfo(`✅ Successful: ${index}`);
 
+  if (report.notFoundInArtic.length) {
+    loggerInfo(
+      `\n${colors.red}❌ Not found in ARTIC (${report.notFoundInArtic.length}):${colors.reset}`
+    );
+    report.notFoundInArtic.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+
+  if (report.noArtwork.length) {
+    loggerInfo(
+      `\n${colors.red}❌ No artwork (${report.noArtwork.length}):${colors.reset}`
+    );
+    report.noArtwork.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+
+  if (report.noImage.length) {
+    loggerInfo(
+      `\n${colors.red}❌ No image (${report.noImage.length}):${colors.reset}`
+    );
+    report.noImage.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+  if (report.missingData.length) {
+    loggerInfo(
+      `\n${colors.red}❌ Missing data (${report.missingData.length}):${colors.reset}`
+    );
+    report.missingData.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+
+  if (report.noQuestions.length) {
+    loggerInfo(
+      `\n${colors.red}❌ No questions generated (${report.noQuestions.length}):${colors.reset}`
+    );
+    report.noQuestions.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+
+  if (report.insufficientQuestions.length) {
+    loggerInfo(
+      `\n${colors.yellow}⚠️  Insufficient questions (${report.insufficientQuestions.length}):${colors.reset}`
+    );
+    report.insufficientQuestions.forEach((e) =>
+      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
+    );
+  }
+
+  loggerInfo("=".repeat(50) + "\n");
+}
+
+async function main() {
+  let artistIndex = getArtistIndex();
+
+  if (artistIndex >= artists.length) {
+    loggerInfo("All artists have been processed.");
+    return;
+  }
+
+  const firstDay = new Date();
+  firstDay.setDate(firstDay.getDate() + 1);
+
+  let index = 0;
   while (index < 10) {
     loggerInfo(`....Processing ${index}`);
     let day = new Date(firstDay);
@@ -244,65 +338,7 @@ async function main() {
     await waitFor();
   }
 
-  loggerInfo("\n" + "=".repeat(50));
-  loggerInfo("REPORT SUMMARY");
-  loggerInfo("=".repeat(50));
-  loggerInfo(`✅ Successful: ${index}`);
-
-  if (report.notFoundInArtic.length) {
-    loggerInfo(
-      `\n${colors.red}❌ Not found in ARTIC (${report.notFoundInArtic.length}):${colors.reset}`
-    );
-    report.notFoundInArtic.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-
-  if (report.noArtwork.length) {
-    loggerInfo(
-      `\n${colors.red}❌ No artwork (${report.noArtwork.length}):${colors.reset}`
-    );
-    report.noArtwork.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-
-  if (report.noImage.length) {
-    loggerInfo(
-      `\n${colors.red}❌ No image (${report.noImage.length}):${colors.reset}`
-    );
-    report.noImage.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-  if (report.missingData.length) {
-    loggerInfo(
-      `\n${colors.red}❌ Missing data (${report.missingData.length}):${colors.reset}`
-    );
-    report.missingData.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-
-  if (report.noQuestions.length) {
-    loggerInfo(
-      `\n${colors.red}❌ No questions generated (${report.noQuestions.length}):${colors.reset}`
-    );
-    report.noQuestions.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-
-  if (report.insufficientQuestions.length) {
-    loggerInfo(
-      `\n${colors.yellow}⚠️  Insufficient questions (${report.insufficientQuestions.length}):${colors.reset}`
-    );
-    report.insufficientQuestions.forEach((e) =>
-      loggerInfo(`   - ${e.day}: ${e.artist} - ${e.iconic_work}`)
-    );
-  }
-
-  loggerInfo("=".repeat(50) + "\n");
+  printReport(report, index);
 }
 
 main().then(() => {
