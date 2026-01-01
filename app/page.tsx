@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+import colors from "./colors";
+
 interface Question {
   difficulty: string;
   question_number: number;
@@ -19,34 +21,6 @@ interface QuizData {
   image: string;
   questions: Question[];
 }
-
-const colors = {
-  // Main colors
-  primary: "#3b82f6", // Blue for selected/buttons
-  success: "#10b981", // Green for correct
-  error: "#ef4444", // Red for incorrect
-  dark: "#1f2937", // Dark text
-
-  // Backgrounds
-  bg: {
-    page: "#f9fafb", // Page background
-    card: "white", // Card background
-    primary: "#eff6ff", // Primary background (blue tint)
-    success: "#f0fdf4", // Success background (green tint)
-    error: "#fef2f2", // Error background (red tint)
-  },
-
-  // Text
-  text: {
-    primary: "#1f2937", // Primary text
-    secondary: "#64748b", // Secondary text
-    light: "rgba(255, 255, 255, 0.9)", // Light text on dark
-  },
-
-  // Borders & UI
-  border: "#d1d5db", // Default border
-  white: "white",
-};
 
 const IMAGE_WIDTH = 843;
 const IMAGE_HEIGHT = 809;
@@ -199,6 +173,8 @@ function QuizContent() {
   return (
     <main
       style={{
+        maxWidth: "600px",
+        margin: "0 auto",
         minHeight: "100vh",
         backgroundColor: colors.bg.page,
         position: "relative",
