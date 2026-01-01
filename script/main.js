@@ -93,8 +93,12 @@ async function generateQuizQuestions(artwork) {
   each question should have 3 options labeled A, B, and C; 
   provide the correct answer for each question; 
   return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; 
-  only return the JSON array without any additional text.;
-  The questions should be only about the artwork
+  only return the JSON array without any additional text;
+  the questions should be only about the artwork;
+  only use the artwork title on the first question, on subsequent questions don't repeat the title;
+  try to keep the questions unique and not too similar to each other;
+  shoot for questions no that longer than 150 characters each;
+  for the two first questions, don't make them too easy;
   `;
 
   loggerInfo("Generating quiz questions");

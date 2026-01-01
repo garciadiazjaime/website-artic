@@ -90,7 +90,7 @@ function QuizContent() {
       .then((res) => res.json())
       .then((data) => setQuizData(data))
       .catch((err) => console.error("Failed to load questions:", err));
-  }, []);
+  }, [date]);
 
   const currentQuestion = quizData?.questions[currentQuestionIndex];
   const isLastQuestion = quizData
@@ -227,13 +227,13 @@ function QuizContent() {
               width: "100%",
               height: "auto",
               display: "block",
-              maxHeight: "50vh",
+              maxHeight: "48vh",
             }}
           />
         )}
 
         {!quizData ? (
-          <div style={{ backgroundColor: colors.bg.card, padding: "1rem" }}>
+          <div style={{ backgroundColor: colors.bg.card, padding: ".6rem" }}>
             {/* Question skeleton */}
             <div
               style={{
@@ -362,7 +362,7 @@ function QuizContent() {
             </div>
           </div>
         ) : currentQuestion ? (
-          <div style={{ backgroundColor: colors.bg.card, padding: "1rem" }}>
+          <div style={{ backgroundColor: colors.bg.card, padding: ".6rem" }}>
             <h2
               style={{
                 fontSize: "1.125rem",
@@ -400,7 +400,7 @@ function QuizContent() {
                   disabled={!selectedAnswer}
                   style={getButtonStyle(colors.primary, !selectedAnswer)}
                 >
-                  Reveal Answer
+                  Submit
                 </button>
               ) : (
                 <button
