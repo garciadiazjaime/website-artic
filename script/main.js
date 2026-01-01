@@ -112,6 +112,29 @@ async function generateQuizQuestions(artwork) {
   return questions;
 }
 
+async function generateProvenance(artwork) {
+  const prompt = `
+    the following text talks about the provenance of the work "${artwork.data.title}" by "${artwork.data.artist_title}";
+    Summarize the text using bullet points;
+    Use only US dollars;
+    Add a bullet with the approximate current price of the artwork;
+    Return the result as a JSON array of strings;
+    Return only the JSON array, without any additional text;
+    Shoot for bullet points no longer than 120 characters each;
+    Provenance: ${artwork.data.provenance_text}`;
+
+  loggerInfo("Generating provenance");
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+  });
+
+  const cleanJson = response.text.replace(/^```json|```$/g, "").trim();
+  const provenance = JSON.parse(cleanJson);
+
+  return provenance;
+}
+
 async function getArtworks(artist) {
   loggerInfo(`Fetching works by artist: ${artist}`);
   const query = {
@@ -322,10 +345,13 @@ async function main() {
       continue;
     }
 
+    const provenance = await generateProvenance(artwork);
+
     const quiz = {
       image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/843,/0/default.jpg`,
       quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
       questions,
+      provenance,
       mode: MODEL_NAME,
     };
     await saveArtwork(dateString, artwork);
