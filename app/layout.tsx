@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   title: "Seven Questions a Day from the Art Institute of Chicago",
   description:
     "Built this simple quiz app to test your knowledge about famous artworks from the Art Institute of Chicago.",
+  manifest: "/manifest.json",
+  themeColor: colors.primary,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

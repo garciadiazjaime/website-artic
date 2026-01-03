@@ -15,7 +15,7 @@ async function main() {
   const files = fs
     .readdirSync(BASE_FOLDER)
     .filter(
-      (file) => file.split(".")[0] > today && file.endsWith(".artwork.json")
+      (file) => file.split(".")[0] >= today && file.endsWith(".artwork.json")
     )
     .sort();
 
