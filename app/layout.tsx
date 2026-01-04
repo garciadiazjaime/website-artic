@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
+
 import "./globals.css";
 import colors from "./colors";
 
@@ -37,6 +39,7 @@ export default function RootLayout({
         style={{ backgroundColor: colors.bg.page }}
       >
         {children}
+        <GoogleAnalytics gaId="G-BW1L0FMMNM" />
       </body>
     </html>
   );
