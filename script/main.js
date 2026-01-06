@@ -32,7 +32,7 @@ async function saveArtwork(dateString, artwork) {
 
 async function generateQuizQuestions(artwork) {
   const prompt = `Generate 7 quiz questions about the following artwork: "${artwork.data.title}" by "${artwork.data.artist_title}"; 
-  The questions should be a mix of easy, intermediate, hard, and expert difficulty levels; 
+  The questions should be a mix of difficulty levels: 2 easy questions, 2 intermediate questions, 2 hard questions, and one expert question, in that order; 
   each question should have 3 options labeled A, B, and C; 
   provide the correct answer for each question; 
   return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; 
@@ -40,9 +40,10 @@ async function generateQuizQuestions(artwork) {
   the questions should be only about the artwork;
   Use the artwork title only in the first question; do not repeat the title in subsequent questions;
   try to keep the questions unique and not too similar to each other;
-  Aim for questions no longer than 150 characters each;
-  For the first two questions, don’t make them too easy;
-  Keep a casual and engaging tone.
+  Aim for questions no longer than 120 characters each;
+  For the first two easy questions, don’t make them too easy;
+  Keep a casual and engaging tone;
+  The title of the question should only include one question;
   `;
 
   loggerInfo("Generating quiz questions");
