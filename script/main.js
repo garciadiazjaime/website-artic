@@ -31,17 +31,18 @@ async function saveArtwork(dateString, artwork) {
 }
 
 async function generateQuizQuestions(artwork) {
-  const prompt = `Generate 7 quiz questions about the following artwork: "${artwork.data.title}" by "${artwork.data.artist_title}"; 
-  The questions should be a mix of difficulty levels: 2 easy questions, 2 intermediate questions, 2 hard questions, and one expert question, in that order; 
-  each question should have 3 options labeled A, B, and C; 
-  provide the correct answer for each question; 
-  return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; 
+  const prompt = `Generate 5 quiz questions about the following artwork: "${artwork.data.title}" by "${artwork.data.artist_title}"; 
+  The questions should be a mix of difficulty levels: 1 easy question, 1 intermediate question, 2 hard questions, and one expert question, in that order; 
+  For the first question, always asked who's the artist of the artwork but if the artwork title contains the artist name, change the question to be about the year of creation;
+  For the last question, make it an expert-level question about something unique about the artwork;
+  Each question should have 3 options labeled A, B, and C; 
+  Provide the correct answer for each question; 
+  Return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; 
   Only return the JSON array, without any additional text;
-  the questions should be only about the artwork;
-  Use the artwork title only in the first question; do not repeat the title in subsequent questions;
+  The questions should be only about the artwork;
+  Don't use the artwork title on any questions except for the first one if it's about the artist;
   try to keep the questions unique and not too similar to each other;
   Aim for questions no longer than 120 characters each;
-  For the first two easy questions, don’t make them too easy;
   Keep a casual and engaging tone;
   The title of the question should only include one question;
   `;
@@ -259,7 +260,7 @@ async function main() {
       continue;
     }
 
-    if (questions.length < 7) {
+    if (questions.length < 5) {
       loggerInfo(
         "[error] Not enough questions generated for",
         artwork.data.api_link,
@@ -277,7 +278,7 @@ async function main() {
     }
 
     const quiz = {
-      image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/843,/0/default.jpg`,
+      image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/600,800/0/default.jpg`,
       quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
       questions,
       provenance,
