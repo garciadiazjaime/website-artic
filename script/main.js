@@ -221,7 +221,7 @@ async function main() {
   firstDay.setDate(firstDay.getDate() + 1);
 
   let index = 0;
-  while (index < 10) {
+  while (index < 5) {
     loggerInfo(`....Processing ${index}`);
     let day = new Date(firstDay);
     day.setDate(firstDay.getDate() + index);

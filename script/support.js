@@ -42,7 +42,7 @@ export async function generateProvenance(artwork) {
   const prompt = `
     the following text talks about the provenance of the work "${artwork.data.title}" by "${artwork.data.artist_title}";
     Summarize the text using up to 5 bullet points;
-    On each bullet point, if there's no information about the worth or price of the artwork, supply an approximate value based on similar artworks by the same artist except for the first bullet point;
+    On each bullet point, if there's no information about the worth or price of the artwork, supply an approximate value based on similar artworks by the same artist except for the first bullet point and making sure the estimate is not greater than some possible amount found on the subsequent bullet points;
     Use only US dollars;
     Add a bullet with the approximate current price of the artwork;
     Return the result as a JSON array of strings;
