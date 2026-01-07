@@ -42,7 +42,7 @@ export async function generateProvenance(artwork) {
   const prompt = `
     the following text talks about the provenance of the work "${artwork.data.title}" by "${artwork.data.artist_title}";
     Summarize the text using up to 5 bullet points;
-    On each bullet point, if there's no information about the worth or price of the artwork, supply an approximate value based on similar artworks by the same artist or from the same period;
+    On each bullet point, if there's no information about the worth or price of the artwork, supply an approximate value based on similar artworks by the same artist except for the first bullet point;
     Use only US dollars;
     Add a bullet with the approximate current price of the artwork;
     Return the result as a JSON array of strings;
@@ -87,4 +87,36 @@ export async function uploadFile(Key, payload) {
 
   await s3Client.send(command);
   loggerInfo(`Uploaded: ${Key}`);
+}
+
+export async function uploadImageToS3(Key, imageUrl) {
+  loggerInfo("Uploading image to S3:", imageUrl);
+
+  const response = await fetch(imageUrl, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "image/webp,image/apng,image/*,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      Referer: "https://www.artic.edu/",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch image from ${imageUrl}: ${response.statusText}`
+    );
+  }
+  const imageBuffer = await response.arrayBuffer();
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key,
+    Body: imageBuffer,
+    ContentType: "image/jpeg",
+    CacheControl: "public, max-age=31536000", // Cache for 1 year
+  });
+
+  await s3Client.send(command);
+  loggerInfo(`Uploaded image: ${Key}`);
 }

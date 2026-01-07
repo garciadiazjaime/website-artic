@@ -2,7 +2,6 @@ import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
 
-import artQuizExample from "./data/quiz_example.js";
 import artists from "./data/artists.js";
 import {
   loggerInfo,
@@ -10,6 +9,7 @@ import {
   BASE_FOLDER,
   saveQuiz,
   uploadFile,
+  uploadImageToS3,
 } from "./support.js";
 
 const ai = new GoogleGenAI({});
@@ -278,7 +278,8 @@ async function main() {
     }
 
     const quiz = {
-      image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/600,800/0/default.jpg`,
+      source_image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/600,800/0/default.jpg`,
+      image: `${process.env.QUIZ_URL}/${dateString}.jpg`,
       quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
       questions,
       provenance,
@@ -288,6 +289,10 @@ async function main() {
     await saveQuiz(dateString, quiz);
 
     await uploadFile(`public/art-quiz/${dateString}.json`, quiz);
+    await uploadImageToS3(
+      `public/art-quiz/${dateString}.jpg`,
+      quiz.source_image
+    );
 
     index += 1;
 
