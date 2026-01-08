@@ -10,12 +10,10 @@ import {
   saveQuiz,
   uploadFile,
   uploadImageToS3,
+  MODEL_NAME,
 } from "./support.js";
 
 const ai = new GoogleGenAI({});
-
-// gemma-3-12b-it
-const MODEL_NAME = "gemini-2.5-flash";
 
 async function waitFor(ms = 1000) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,10 +31,10 @@ async function saveArtwork(dateString, artwork) {
 async function generateQuizQuestions(artwork) {
   const prompt = `Generate 5 quiz questions about the following artwork: "${artwork.data.title}" by "${artwork.data.artist_title}"; 
   The questions should be a mix of difficulty levels: 1 easy question, 1 intermediate question, 2 hard questions, and one expert question, in that order; 
+  Each question should have 3 options labeled A, B, and C;
+  Provide the correct answer for each question;
   For the first question, always asked who's the artist of the artwork but if the artwork title contains the artist name, change the question to be about the year of creation;
   For the last question, make it an expert-level question about something unique about the artwork;
-  Each question should have 3 options labeled A, B, and C; 
-  Provide the correct answer for each question; 
   Return the result as a JSON array of question objects with the following structure: { difficulty: string, question_number: number, question_text: string, options: { A: string, B: string, C: string }, correct_answer: string (A, B, or C) }; 
   Only return the JSON array, without any additional text;
   The questions should be only about the artwork;
@@ -138,6 +136,26 @@ const getArtistIndex = () => {
   return index + 1;
 };
 
+const randomizeQuestions = (questions) => {
+  return questions.map((question) => {
+    const randomOption = Math.floor(Math.random() * 3);
+    const optionsKeys = ["A", "B", "C"];
+    const randomKey = optionsKeys[randomOption];
+
+    const correctAnswerText = question.options[question.correct_answer];
+    const randomAnswerText = question.options[randomKey];
+
+    // Swap the options
+    question.options[question.correct_answer] = randomAnswerText;
+    question.options[randomKey] = correctAnswerText;
+
+    // Update the correct answer
+    question.correct_answer = randomKey;
+
+    return question;
+  });
+};
+
 const report = {
   notFoundInArtic: [],
   noArtwork: [],
@@ -221,7 +239,7 @@ async function main() {
   firstDay.setDate(firstDay.getDate() + 1);
 
   let index = 0;
-  while (index < 5) {
+  while (index < 10) {
     loggerInfo(`....Processing ${index}`);
     let day = new Date(firstDay);
     day.setDate(firstDay.getDate() + index);
@@ -270,6 +288,8 @@ async function main() {
       continue;
     }
 
+    const randomizedQuestions = randomizeQuestions([...questions]);
+
     let provenance = await generateProvenance(artwork);
     if (!Array.isArray(provenance) || !provenance.length) {
       loggerInfo("[error] No provenance generated for", artwork.data.api_link);
@@ -281,7 +301,7 @@ async function main() {
       source_image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/600,800/0/default.jpg`,
       image: `${process.env.QUIZ_URL}/${dateString}.jpg`,
       quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
-      questions,
+      questions: randomizedQuestions,
       provenance,
       mode: MODEL_NAME,
     };
