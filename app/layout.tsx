@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seven Questions a Day from the Art Institute of Chicago",
+  title: "Five Questions a Day about Art | Art Institute of Chicago",
   description:
     "Built this simple quiz app to test your knowledge about famous artworks from the Art Institute of Chicago.",
   manifest: "/manifest.json",
