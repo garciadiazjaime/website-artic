@@ -228,7 +228,7 @@ function printReport(report, index) {
 }
 
 async function main() {
-  let artistIndex = getArtistIndex();
+  let artistIndex = 20; //getArtistIndex();
 
   if (artistIndex >= artists.length) {
     loggerInfo("All artists have been processed.");
@@ -236,7 +236,7 @@ async function main() {
   }
 
   const firstDay = new Date();
-  firstDay.setDate(firstDay.getDate() + 1);
+  // firstDay.setDate(firstDay.getDate() + 1);
 
   let index = 0;
   while (index < 10) {
@@ -246,11 +246,11 @@ async function main() {
     loggerInfo(`....Processing ${index}: ${day.toJSON().split("T")[0]}`);
     const dateString = day.toJSON().split("T")[0];
 
-    if (quizExists(dateString)) {
-      loggerInfo(`Quiz already exists for ${dateString}, skipping...`);
-      index += 1;
-      continue;
-    }
+    // if (quizExists(dateString)) {
+    //   loggerInfo(`Quiz already exists for ${dateString}, skipping...`);
+    //   index += 1;
+    //   continue;
+    // }
 
     const artwork = await getArtwork(artists[artistIndex]);
     artistIndex += 1;
@@ -298,7 +298,7 @@ async function main() {
     }
 
     const quiz = {
-      source_image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/600,800/0/default.jpg`,
+      source_image: `https://www.artic.edu/iiif/2/${artwork.data.image_id}/full/375,/0/default.jpg`,
       image: `${process.env.QUIZ_URL}/${dateString}.jpg`,
       quiz_title: `${artwork.data.artist_title}: ${artwork.data.title} - Art Institute of Chicago`,
       questions: randomizedQuestions,
