@@ -49,6 +49,7 @@ export async function generateProvenance(artwork) {
     Return only the JSON array, without any additional text;
     Shoot for bullet points no longer than 120 characters each;
     Keep a casual and engaging tone;
+    Don't use exclamation marks;
     Provenance: ${artwork.data.provenance_text}`;
 
   loggerInfo("Generating provenance");

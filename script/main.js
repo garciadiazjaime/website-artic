@@ -16,7 +16,12 @@ import {
 const ai = new GoogleGenAI({});
 
 async function waitFor(ms = 1000) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) =>
+    setTimeout(() => {
+      loggerInfo(`waited for ${ms} ms`);
+      resolve();
+    }, ms)
+  );
 }
 
 async function saveArtwork(dateString, artwork) {
@@ -228,7 +233,7 @@ function printReport(report, index) {
 }
 
 async function main() {
-  let artistIndex = 20; //getArtistIndex();
+  let artistIndex = getArtistIndex();
 
   if (artistIndex >= artists.length) {
     loggerInfo("All artists have been processed.");
@@ -236,21 +241,28 @@ async function main() {
   }
 
   const firstDay = new Date();
-  // firstDay.setDate(firstDay.getDate() + 1);
+  firstDay.setDate(firstDay.getDate() + 1);
 
   let index = 0;
-  while (index < 10) {
-    loggerInfo(`....Processing ${index}`);
-    let day = new Date(firstDay);
+  let day = new Date(firstDay);
+
+  const marchFirst = new Date(firstDay.getFullYear(), 2, 1); // March 1st
+
+  while (day < marchFirst && index < 50) {
     day.setDate(firstDay.getDate() + index);
     loggerInfo(`....Processing ${index}: ${day.toJSON().split("T")[0]}`);
     const dateString = day.toJSON().split("T")[0];
 
-    // if (quizExists(dateString)) {
-    //   loggerInfo(`Quiz already exists for ${dateString}, skipping...`);
-    //   index += 1;
-    //   continue;
-    // }
+    if (quizExists(dateString)) {
+      loggerInfo(`Quiz already exists for ${dateString}, skipping...`);
+      index += 1;
+      continue;
+    }
+
+    if (artistIndex >= artists.length) {
+      loggerInfo("No more artists to process.");
+      break;
+    }
 
     const artwork = await getArtwork(artists[artistIndex]);
     artistIndex += 1;
@@ -271,6 +283,7 @@ async function main() {
       continue;
     }
 
+    await waitFor(3_000);
     const questions = await generateQuizQuestions(artwork);
     if (questions?.length === 0) {
       loggerInfo("[error] No questions generated for", artwork.data.api_link);
@@ -290,6 +303,7 @@ async function main() {
 
     const randomizedQuestions = randomizeQuestions([...questions]);
 
+    await waitFor(3_000);
     let provenance = await generateProvenance(artwork);
     if (!Array.isArray(provenance) || !provenance.length) {
       loggerInfo("[error] No provenance generated for", artwork.data.api_link);
@@ -315,8 +329,6 @@ async function main() {
     );
 
     index += 1;
-
-    await waitFor();
   }
 
   printReport(report, index);
