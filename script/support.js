@@ -4,7 +4,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import "dotenv/config";
 
 const ai = new GoogleGenAI({});
-export const MODEL_NAME = "gemma-3-12b-it";
+export const MODEL_NAME = "gemma-3-27b-it";
+// export const MODEL_NAME = "gemma-3-12b-it";
 // export const MODEL_NAME = "gemini-2.5-flash";
 export const BASE_FOLDER = "script/art-quiz";
 

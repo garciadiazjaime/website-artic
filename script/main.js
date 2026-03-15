@@ -233,6 +233,11 @@ function printReport(report, index) {
 }
 
 async function main() {
+  if (!fs.existsSync(BASE_FOLDER)) {
+    loggerInfo(`Base folder "${BASE_FOLDER}" does not exist. Creating...`);
+    fs.mkdirSync(BASE_FOLDER, { recursive: true });
+  }
+
   let artistIndex = getArtistIndex();
 
   if (artistIndex >= artists.length) {
@@ -241,14 +246,11 @@ async function main() {
   }
 
   const firstDay = new Date();
-  firstDay.setDate(firstDay.getDate() + 1);
+  // firstDay.setDate(firstDay.getDate() + 1);
 
   let index = 0;
   let day = new Date(firstDay);
-
-  const marchFirst = new Date(firstDay.getFullYear(), 2, 1); // March 1st
-
-  while (day < marchFirst && index < 50) {
+  while (index < 1) {
     day.setDate(firstDay.getDate() + index);
     loggerInfo(`....Processing ${index}: ${day.toJSON().split("T")[0]}`);
     const dateString = day.toJSON().split("T")[0];
